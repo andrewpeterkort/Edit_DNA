@@ -78,13 +78,13 @@ int** loadConst(){
     return constArray;
 }
 
-std::string** loadDNA(){
+std::string** loadDNA(int& length){
 
     std::string line;
     std::fstream inputFile;
     inputFile.open("imp2input.txt", std::ios::in);
 
-    int length = countFileLines(inputFile);
+    length = countFileLines(inputFile);
     std::string** DNA = new std::string*[length];
     for(int i = 0; i < length; i++)
         DNA[i] = new std::string[2];
@@ -100,20 +100,27 @@ std::string** loadDNA(){
         }
     }
 
-    printDNA(DNA,length);
     inputFile.close();
     return DNA;
 }
 
 int main(){
 
-    std::string** DNA = loadDNA();
+    int length;
+    std::string** DNA = loadDNA(length);
     int** constArray = loadConst();
     printConst(constArray);
+    printDNA(DNA,length);
 
     for(int i = 0; i < 6; i++)
         delete[] constArray[i];
 
     delete[] constArray;
+
+    for(int i = 0; i < length; i++)
+        delete[] DNA[i];
+
+    delete[] DNA;
+
     return 0;
 }
