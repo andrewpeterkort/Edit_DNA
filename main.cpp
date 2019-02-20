@@ -104,6 +104,55 @@ std::string** loadDNA(int& length){
     return DNA;
 }
 
+int max(int first, int second, int third){
+
+    int max = first;
+
+    if(second > max)
+        max = second;
+
+    if(third > max)
+        max = third;
+
+    return max;
+}
+
+int diff(std::string* geneArray, int xCord, int yCord){
+
+    if(geneArray[0].at(xCord - 1) == geneArray[1].at(yCord - 1))
+        return 0;
+
+    return 1;
+}
+
+//this will only be single edit test, first with only +1 cost
+int editCost(std::string* DNA){
+
+    int answer;
+    int xLength = DNA[0].length() + 1;
+    int yLength = DNA[1].length() + 1;
+
+    int** costMatrix = new int*[yLength];
+    for(int i = 0; i < yLength; i++)
+        costMatrix[i] = new int[xLength];
+
+    for(int i = 0; i < xLength; i++)
+        costMatrix[0][i] = i;
+
+    for(int i = 0; i < yLength; i++)
+        costMatrix[i][0] = i;
+
+    for(int i = 1; i < yLength; i++){
+
+        for(int j = 1; j < xLength; j++){
+
+           costMatrix[i][j] = max(costMatrix[i][j - 1] + 1, costMatrix[i-1][j] + 1, costMatrix[i-1][j-1] + diff(DNA, j, i));
+        }
+    }
+
+    return costMatrix[yLength - 1][xLength - 1];
+}
+
 int main(){
 
     int length;
@@ -111,6 +160,7 @@ int main(){
     int** constArray = loadConst();
     printConst(constArray);
     printDNA(DNA,length);
+    std::cout << "COST: " << editCost(DNA[0]) << std::endl;
 
     for(int i = 0; i < 6; i++)
         delete[] constArray[i];
