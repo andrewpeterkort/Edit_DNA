@@ -20,6 +20,34 @@ void printConst(int** constArray){
     }
 }
 
+void printDNA(std::string** dataArray, int length){
+
+    for(int i = 0; i < length; i++){
+
+        for(int j = 0; j < 2; j++){
+
+            std::cout << dataArray[i][j] << " | ";
+        }
+
+        std::cout << std::endl;
+    }
+}
+
+int countFileLines(std::fstream& input){
+
+    int count = 0;
+    std::string currentLine;
+    input.clear();
+    input.seekp(0, input.beg); 
+
+    while(std::getline(input, currentLine))
+        count++;
+
+    input.clear();
+    input.seekp(0, input.beg);
+    return count;
+}
+
 int** loadConst(){
 
     int lineNumber = 0;
@@ -50,8 +78,36 @@ int** loadConst(){
     return constArray;
 }
 
+std::string** loadDNA(){
+
+    std::string line;
+    std::fstream inputFile;
+    inputFile.open("imp2input.txt", std::ios::in);
+
+    int length = countFileLines(inputFile);
+    std::string** DNA = new std::string*[length];
+    for(int i = 0; i < length; i++)
+        DNA[i] = new std::string[2];
+
+    for(int i = 0; i < length; i++){
+
+        std::getline(inputFile, line);
+        std::stringstream stream(line);
+
+        for(int j = 0; j < 2; j++){
+
+            std::getline(stream, DNA[i][j], ',');
+        }
+    }
+
+    printDNA(DNA,length);
+    inputFile.close();
+    return DNA;
+}
+
 int main(){
 
+    std::string** DNA = loadDNA();
     int** constArray = loadConst();
     printConst(constArray);
 
