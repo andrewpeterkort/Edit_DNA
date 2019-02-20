@@ -125,10 +125,9 @@ int diff(std::string* geneArray, int xCord, int yCord){
     return 1;
 }
 
-//this will only be single edit test, first with only +1 cost
 int editCost(std::string* DNA){
 
-    int answer;
+    int answer, cost;
     int xLength = DNA[0].length() + 1;
     int yLength = DNA[1].length() + 1;
 
@@ -150,7 +149,14 @@ int editCost(std::string* DNA){
         }
     }
 
-    return costMatrix[yLength - 1][xLength - 1];
+    cost = costMatrix[yLength - 1][xLength - 1];
+
+    for(int i = 0; i < yLength; i++)
+        delete[] costMatrix[i];
+
+    delete[] costMatrix;
+
+    return cost;
 }
 
 int main(){
@@ -171,6 +177,6 @@ int main(){
         delete[] DNA[i];
 
     delete[] DNA;
-
+    
     return 0;
 }
