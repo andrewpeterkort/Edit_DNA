@@ -8,16 +8,20 @@
 #include <cstdlib>
 #include <sstream>
 
-void printConst(int** constArray){
+void printArray(int** constArray, int xLength, int yLength){
 
-    for(int i = 0; i < 6; i++){
+    std::cout << "START------------------------------------" << std::endl;
 
-        for(int j = 0; j < 6; j++){
+    for(int i = 0; i < yLength; i++){
+
+        for(int j = 0; j < xLength; j++){
             
-            std::cout << constArray[i][j];
+            std::cout << constArray[i][j] << " ";
         }
-        std::cout << std::endl;
+        std::cout << "|" << std::endl;
     }
+
+    std::cout << "END------------------------------------" << std::endl;
 }
 
 void printDNA(std::string** dataArray, int length){
@@ -104,28 +108,60 @@ std::string** loadDNA(int& length){
     return DNA;
 }
 
-int max(int first, int second, int third){
+int min(int first, int second, int third){
 
-    int max = first;
+    int min = first;
 
-    if(second > max)
-        max = second;
+    if(second < min)
+        min = second;
 
-    if(third > max)
-        max = third;
+    if(third < min )
+        min = third;
 
-    return max;
+    return min;
 }
 
-int diff(std::string* geneArray, int xCord, int yCord){
+int translateDNA(char& base){
 
-    if(geneArray[0].at(xCord - 1) == geneArray[1].at(yCord - 1))
-        return 0;
+    switch(base){
+
+        case 'A':
+            return 2;
+        case 'T':
+            return 3;
+        case 'G':
+            return 4;
+        case 'C':
+            return 5;
+        default:
+            break;
+    }
 
     return 1;
 }
 
-int editCost(std::string* DNA){
+int getInsertXCost(std::string* geneArray, int xCord, int** constArray){
+
+    char changedXBase = geneArray[0].at(xCord - 1);
+    return constArray[1][translateDNA(changedXBase)];
+}
+
+int getInsertYCost(std::string* geneArray, int yCord, int** constArray){
+
+    char changedYBase = geneArray[1].at(yCord - 1);
+
+    return constArray[1][translateDNA(changedYBase)];
+}
+
+int getDiagonalCost(std::string* geneArray, int xCord, int yCord, int** constArray){
+
+    char baseX = geneArray[0].at(xCord - 1);
+    char baseY = geneArray[1].at(yCord - 1);
+
+    return constArray[translateDNA(baseX)][translateDNA(baseY)];
+}
+
+int editCost(std::string* DNA, int** constArray){
 
     int answer, cost;
     int xLength = DNA[0].length() + 1;
@@ -135,17 +171,19 @@ int editCost(std::string* DNA){
     for(int i = 0; i < yLength; i++)
         costMatrix[i] = new int[xLength];
 
-    for(int i = 0; i < xLength; i++)
-        costMatrix[0][i] = i;
+    costMatrix[0][0] = 0;
 
-    for(int i = 0; i < yLength; i++)
-        costMatrix[i][0] = i;
+    for(int i = 1; i < xLength; i++)
+        costMatrix[0][i] = costMatrix[0][i - 1] + getInsertXCost(DNA, i, constArray);
+
+    for(int i = 1; i < yLength; i++)
+        costMatrix[i][0] = costMatrix[i - 1][0] + getInsertYCost(DNA, i, constArray);
 
     for(int i = 1; i < yLength; i++){
 
         for(int j = 1; j < xLength; j++){
 
-           costMatrix[i][j] = max(costMatrix[i][j - 1] + 1, costMatrix[i-1][j] + 1, costMatrix[i-1][j-1] + diff(DNA, j, i));
+           costMatrix[i][j] = min(costMatrix[i][j - 1] + getInsertXCost(DNA, j, constArray), costMatrix[i-1][j] + getInsertYCost(DNA, i, constArray), costMatrix[i-1][j-1] + getDiagonalCost(DNA, j, i, constArray));
         }
     }
 
@@ -164,9 +202,9 @@ int main(){
     int length;
     std::string** DNA = loadDNA(length);
     int** constArray = loadConst();
-    printConst(constArray);
+    printArray(constArray, 6, 6);
     printDNA(DNA,length);
-    std::cout << "COST: " << editCost(DNA[0]) << std::endl;
+    std::cout << "Cost: " << editCost(DNA[0], constArray) << std::endl;
 
     for(int i = 0; i < 6; i++)
         delete[] constArray[i];
