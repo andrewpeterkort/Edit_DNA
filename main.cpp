@@ -37,6 +37,16 @@ void printDNA(std::string** dataArray, int length){
     }
 }
 
+struct Node{
+
+    Node(): cost(0){
+        //path[0] = "";
+        //path[1] = "";
+    }
+    std::string path[2];
+    int cost;
+};
+
 int countFileLines(std::fstream& input){
 
     int count = 0;
@@ -108,17 +118,34 @@ std::string** loadDNA(int& length){
     return DNA;
 }
 
-int min(int first, int second, int third){
+Node* min(Node& xNode, int xAddition, Node& yNode, int yAddition, Node& diagonalNode, int diagonalAddition){
 
+    int first = xNode.cost + xAddition;
+    int second = yNode.cost + yAddition;
+    int third = diagonalNode.cost + diagonalAddition;
     int min = first;
+    std::string minPath[2] = {xNode.path[0].c_str(), xNode.path[1].c_str()};
+    Node* newNode = new Node;
 
-    if(second < min)
+    if(second < min){
+
         min = second;
+        minPath[0] = yNode.path[0].c_str();
+        minPath[1] = yNode.path[1].c_str();
+    }
 
-    if(third < min )
+    if(third < min ){
+
         min = third;
+        minPath[0] = diagonalNode.path[0].c_str();
+        minPath[1] = diagonalNode.path[1].c_str();
+    }
 
-    return min;
+    newNode->cost = min;
+    newNode->path[0] = minPath[0].c_str();
+    newNode->path[1] = minPath[1].c_str();
+
+    return newNode;
 }
 
 int translateDNA(char& base){
@@ -161,50 +188,96 @@ int getDiagonalCost(std::string* geneArray, int xCord, int yCord, int** constArr
     return constArray[translateDNA(baseX)][translateDNA(baseY)];
 }
 
-int editCost(std::string* DNA, int** constArray){
+Node* editCost(std::string* DNA, int** constArray){
 
     int answer, cost;
     int xLength = DNA[0].length() + 1;
     int yLength = DNA[1].length() + 1;
+    Node* newNode = new Node;
+    Node* tempNode;
 
-    int** costMatrix = new int*[yLength];
+    Node** costMatrix = new Node*[yLength];
     for(int i = 0; i < yLength; i++)
-        costMatrix[i] = new int[xLength];
+        costMatrix[i] = new Node[xLength];
 
-    costMatrix[0][0] = 0;
+    costMatrix[0][0].cost = 0;
 
-    for(int i = 1; i < xLength; i++)
-        costMatrix[0][i] = costMatrix[0][i - 1] + getInsertXCost(DNA, i, constArray);
+    for(int i = 1; i < xLength; i++){
 
-    for(int i = 1; i < yLength; i++)
-        costMatrix[i][0] = costMatrix[i - 1][0] + getInsertYCost(DNA, i, constArray);
+        costMatrix[0][i].cost = costMatrix[0][i - 1].cost + getInsertXCost(DNA, i, constArray);
+        costMatrix[0][i].path[0] = costMatrix[0][i - 1].path[0] + DNA[0].at(i - 1); 
+        costMatrix[0][i].path[1] = costMatrix[0][i - 1].path[1] + "-";
+    }
+
+    for(int i = 1; i < yLength; i++){
+
+        costMatrix[i][0].cost = costMatrix[i - 1][0].cost + getInsertYCost(DNA, i, constArray);
+        costMatrix[i][0].path[0] = costMatrix[i - 1][0].path[0] +  "-";
+        costMatrix[i][0].path[1] = costMatrix[i - 1][0].path[1] + DNA[1].at(i - 1);
+    }
 
     for(int i = 1; i < yLength; i++){
 
         for(int j = 1; j < xLength; j++){
 
-           costMatrix[i][j] = min(costMatrix[i][j - 1] + getInsertXCost(DNA, j, constArray), costMatrix[i-1][j] + getInsertYCost(DNA, i, constArray), costMatrix[i-1][j-1] + getDiagonalCost(DNA, j, i, constArray));
+            tempNode = min(costMatrix[i][j - 1], getInsertXCost(DNA, j, constArray), costMatrix[i-1][j], getInsertYCost(DNA, i, constArray), costMatrix[i-1][j-1],  getDiagonalCost(DNA, j, i, constArray));
+
+            costMatrix[i][j].cost = tempNode->cost;
+
+            if((tempNode->path[0] == costMatrix[i][j - 1].path[0]) && (tempNode->path[1] == costMatrix[i][j - 1].path[1])){
+
+                tempNode->path[0] += DNA[0].at(j - 1);
+                tempNode->path[1] += "-";
+            }
+
+            if((tempNode->path[0] == costMatrix[i - 1][j].path[0]) && (tempNode->path[1] == costMatrix[i - 1][j].path[1])){
+
+                tempNode->path[0] += "-";
+                tempNode->path[1] += DNA[1].at(i - 1);
+            }
+
+            if((tempNode->path[0] == costMatrix[i - 1][j - 1].path[0]) && (tempNode->path[1] == costMatrix[i - 1][j - 1].path[1])){
+
+                tempNode->path[0] += DNA[0].at(j - 1);
+                tempNode->path[1] += DNA[1].at(i - 1);
+            }
+
+
+           costMatrix[i][j] = *tempNode;
+           delete tempNode;
         }
     }
 
-    cost = costMatrix[yLength - 1][xLength - 1];
+    newNode->path[0] = costMatrix[yLength - 1][xLength - 1].path[0];
+    newNode->path[1] = costMatrix[yLength - 1][xLength - 1].path[1];
+    newNode->cost = costMatrix[yLength - 1][xLength - 1].cost;
 
     for(int i = 0; i < yLength; i++)
         delete[] costMatrix[i];
 
     delete[] costMatrix;
 
-    return cost;
+    return newNode;
 }
 
 int main(){
 
     int length;
+    std::ofstream outputFile;
+    outputFile.open("imp2output_our.txt");
     std::string** DNA = loadDNA(length);
     int** constArray = loadConst();
-    printArray(constArray, 6, 6);
-    printDNA(DNA,length);
-    std::cout << "Cost: " << editCost(DNA[0], constArray) << std::endl;
+    Node* answer;
+    //printArray(constArray, 6, 6);
+    //printDNA(DNA,length);
+
+    for(int i = 0; i < length; i++){
+
+        answer = editCost(DNA[i], constArray);
+        outputFile << answer->path[0].c_str() << "," <<  answer->path[1].c_str() << ":" <<  answer->cost << std::endl;
+    }
+
+    delete answer;
 
     for(int i = 0; i < 6; i++)
         delete[] constArray[i];
@@ -215,6 +288,7 @@ int main(){
         delete[] DNA[i];
 
     delete[] DNA;
+    outputFile.close();
     
     return 0;
 }
