@@ -1,2 +1,2 @@
 default: main.cpp
-	g++ -g main.cpp -o DNA_Cost
+	g++ main.cpp -o DNA_Cost
