@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <sstream>
 
+//prints out DNA cost array for testing 
 void printArray(int** constArray, int xLength, int yLength){
 
     std::cout << "START------------------------------------" << std::endl;
@@ -24,6 +25,7 @@ void printArray(int** constArray, int xLength, int yLength){
     std::cout << "END------------------------------------" << std::endl;
 }
 
+//prints out DNA input for testin
 void printDNA(std::string** dataArray, int length){
 
     for(int i = 0; i < length; i++){
@@ -37,6 +39,8 @@ void printDNA(std::string** dataArray, int length){
     }
 }
 
+//Keeps track of possible add/delete/keep paths through the DNA mutation in the path string while
+//also recording the cost to take that path
 struct Node{
 
     Node(): cost(0){
@@ -62,6 +66,7 @@ int countFileLines(std::fstream& input){
     return count;
 }
 
+//loads the mutation costs from the const file.
 int** loadConst(){
 
     int lineNumber = 0;
@@ -92,6 +97,7 @@ int** loadConst(){
     return constArray;
 }
 
+//Loads the DNA sequencies to be tested
 std::string** loadDNA(int& length){
 
     std::string line;
@@ -118,6 +124,8 @@ std::string** loadDNA(int& length){
     return DNA;
 }
 
+//returns the minimume cost option at current DNA mutation path. This can return a bias number if multiple options
+//cost the same, hence why you can get different mutation paths for the same cost
 Node* min(Node& xNode, int xAddition, Node& yNode, int yAddition, Node& diagonalNode, int diagonalAddition){
 
     int first = xNode.cost + xAddition;
@@ -142,12 +150,15 @@ Node* min(Node& xNode, int xAddition, Node& yNode, int yAddition, Node& diagonal
     }
 
     newNode->cost = min;
-    newNode->path[0] = minPath[0].c_str();
+    newNode->path[0] = minPath[0].c_str(); //it makes sure to save the path of the cheepest cost
     newNode->path[1] = minPath[1].c_str();
 
     return newNode;
 }
 
+//because the program loads the const data or mutation costs into an int array instead of a char array, the collumns of the
+//const array need to be translated to their coresponding base pair according to the file format... probably should
+//have just been loaded in as char and then converted dynamically....
 int translateDNA(char& base){
 
     switch(base){
@@ -167,6 +178,8 @@ int translateDNA(char& base){
     return 1;
 }
 
+//X and Y costs correspond to inserts and deletions for and Edit distance algorithm. See edit distance
+//algo online
 int getInsertXCost(std::string* geneArray, int xCord, int** constArray){
 
     char changedXBase = geneArray[0].at(xCord - 1);
@@ -180,6 +193,7 @@ int getInsertYCost(std::string* geneArray, int yCord, int** constArray){
     return constArray[1][translateDNA(changedYBase)];
 }
 
+//diagonal edit distance keeps or replaces the base
 int getDiagonalCost(std::string* geneArray, int xCord, int yCord, int** constArray){
 
     char baseX = geneArray[0].at(xCord - 1);
@@ -188,6 +202,8 @@ int getDiagonalCost(std::string* geneArray, int xCord, int yCord, int** constArr
     return constArray[translateDNA(baseX)][translateDNA(baseY)];
 }
 
+//this is what loops through the cost matrix and finds the cost for all possible paths. Note the constant saving of paths...
+//code probably needs refactoring the most out of all the code here
 Node* editCost(std::string* DNA, int** constArray){
 
     int answer, cost;
@@ -218,27 +234,29 @@ Node* editCost(std::string* DNA, int** constArray){
 
     for(int i = 1; i < yLength; i++){
 
-        for(int j = 1; j < xLength; j++){
+        for(int j = 1; j < xLength; j++){ //here is the double loop that loops through the entire Node cost array
 
             tempNode = min(costMatrix[i][j - 1], getInsertXCost(DNA, j, constArray), costMatrix[i-1][j], getInsertYCost(DNA, i, constArray), costMatrix[i-1][j-1],  getDiagonalCost(DNA, j, i, constArray));
 
             costMatrix[i][j].cost = tempNode->cost;
 
+						//notice how the if statements check to see what Node is returned by checking their paths..... this probably needs
+						//to be replaced with something better for building the edit path for the Nodes
             if((tempNode->path[0] == costMatrix[i][j - 1].path[0]) && (tempNode->path[1] == costMatrix[i][j - 1].path[1])){
 
-                tempNode->path[0] += DNA[0].at(j - 1);
+                tempNode->path[0] += DNA[0].at(j - 1);//this would mean a delation if going from 0 to 1 and insertion if from 1 to 0
                 tempNode->path[1] += "-";
             }
 
             if((tempNode->path[0] == costMatrix[i - 1][j].path[0]) && (tempNode->path[1] == costMatrix[i - 1][j].path[1])){
 
-                tempNode->path[0] += "-";
+                tempNode->path[0] += "-"; //read above comment, vice versus
                 tempNode->path[1] += DNA[1].at(i - 1);
             }
 
             if((tempNode->path[0] == costMatrix[i - 1][j - 1].path[0]) && (tempNode->path[1] == costMatrix[i - 1][j - 1].path[1])){
 
-                tempNode->path[0] += DNA[0].at(j - 1);
+                tempNode->path[0] += DNA[0].at(j - 1); //this just adds the new path character to each path, replacement or skip
                 tempNode->path[1] += DNA[1].at(i - 1);
             }
 
@@ -248,7 +266,7 @@ Node* editCost(std::string* DNA, int** constArray){
         }
     }
 
-    newNode->path[0] = costMatrix[yLength - 1][xLength - 1].path[0];
+    newNode->path[0] = costMatrix[yLength - 1][xLength - 1].path[0]; //all the answers are stored in newNode
     newNode->path[1] = costMatrix[yLength - 1][xLength - 1].path[1];
     newNode->cost = costMatrix[yLength - 1][xLength - 1].cost;
 
